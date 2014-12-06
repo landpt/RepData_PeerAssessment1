@@ -51,7 +51,8 @@ are a total of 17,568 observations in this dataset.
 
 First of all, we need to load the required libraries for this work.
 
-```{r libraries}
+
+```r
 library(knitr)
 library(ggplot2)
 library(xtable)
@@ -61,25 +62,55 @@ library(lattice)
 
 I am going to load the activity file now, using the *read.csv* command:
 
-```{r load}
+
+```r
 activity <- read.csv("activity.csv")
 ```
 
 Before processing the data, it might be a good idea to see the internal structure
 of the data. As such I will be using *str* command.
 
-```{r summary}
+
+```r
 str(activity)
+```
+
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Factor w/ 61 levels "2012-10-01","2012-10-02",..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
 ```
 
 
 As it is possible to see, *date* column is in Factor type. As such, we need to 
 convert *date* to Date format:
 
-```{r date}
+
+```r
 activity$date <- as.Date(activity$date,"%Y-%m-%d")
 str(activity)
+```
+
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Date, format: "2012-10-01" "2012-10-01" ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+```
+
+```r
 head(activity)
+```
+
+```
+##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25
 ```
 
 Now the data is ready to be used to the questions.
@@ -90,16 +121,20 @@ When we used the command *head* previously, it was possible to notice that days
 are not aggregated at all. To fix that, we will use *aggregate* command, in order
 to answer the questions.
 
-```{r aggregate}
+
+```r
 stepsDay <- aggregate(steps ~ date, data = activity, sum)
 ```
 
 As requested, we can draw a histogram now, using ggplot system:
 
-```{r plot1}
+
+```r
 ggplot(stepsDay, aes(x = date, y = steps)) + geom_bar(stat = "identity") + 
     ylab("Steps") + xlab("Date") + ggtitle("Steps per Day")
 ```
+
+![plot of chunk plot1](figure/plot1.png) 
 
 
 As it was expected, some intervals are empty, i.e., have NA values. This means that 
@@ -107,14 +142,15 @@ in those intervals the individual possibly did not use the device or some malfun
 Either way, the mean and the median of the data are easily obtained using *mean*
 and *median* commands.
 
-```{r calcs}
+
+```r
 meanSteps <- mean(stepsDay$steps)
 medianSteps <- median(stepsDay$steps)
 ```
 
 We can now answer the question:  
 Q: What is mean total number of steps taken per day?  
-A: Mean is `r meanSteps` whereas median is `r medianSteps`.
+A: Mean is 1.0766 &times; 10<sup>4</sup> whereas median is 10765.
 
 ## Question Two - What is the average daily activity pattern?
 
@@ -124,20 +160,31 @@ interval and the average number of steps taken, averaged accross all days.
 
 To do that, we'll use *aggregate* command once again, but using *mean* function:
 
-```{r aggregate1}
+
+```r
 stepsInterval <- aggregate(steps ~ interval, data = activity, mean)
 str(stepsInterval)
 ```
 
+```
+## 'data.frame':	288 obs. of  2 variables:
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+##  $ steps   : num  1.717 0.3396 0.1321 0.1509 0.0755 ...
+```
+
 Now we can plot as requested:
 
-```{r plot2}
+
+```r
 plot(stepsInterval$interval, stepsInterval$steps, type = "l", xlab = "Interval", ylab = "Steps mean")
 ```
 
+![plot of chunk plot2](figure/plot2.png) 
+
 Using *max* command, we can estimate what interval has the highest steps mean.
 
-```{r calcs2}
+
+```r
 maxSteps <- max(stepsInterval$steps)
 maxInterval <- stepsInterval[stepsInterval$steps == maxSteps, 1]
 ```
@@ -146,7 +193,7 @@ Now we can answer the question:
 Q: Which 5-minute interval, on average across all the days in the dataset, contains 
 the maximum number of steps?  
 A: The 5-minute interval that contains the maximum number of steps is the interval 
-number `r maxInterval` with an average of `r maxSteps` steps.
+number 835 with an average of 206.1698 steps.
 
 
 ## Question Three: Imputing missing values
@@ -154,11 +201,12 @@ number `r maxInterval` with an average of `r maxSteps` steps.
 As we verified previously, there are some intervals with NA values. We can 
 calculate this amount:
 
-```{r calcs3}
+
+```r
 numOfNa <- sum(is.na(activity$steps))
 ```
 
-There are `r numOfNa` NA values through the data.  
+There are 2304 NA values through the data.  
 
 Now I was requested to devise a strategy fopr filling in all of the missing values
 in the dataset. For that purpose, I decided to fill each NA value with its 
@@ -167,16 +215,18 @@ average steps for each interval.
 First, we need to create a dataset that is equal to the original dataset,
 except that it will be used to fill the missing data:
 
-```{r newdata}
+
+```r
 activityNoNa <- activity
-````
+```
 
 The devised strategy can now be applied using both datasets: it will run a cycle
 where it will verify if there is a NA Value in the specific row. In case it is
 positive, the same row will be filled with the average steps calculated in Question 
 Two, for each interval.
 
-```{r imputate}
+
+```r
 for (i in 1:nrow(activityNoNa)) {
     if (is.na(activityNoNa[i, ]$steps)) {
         indInterval <- activityNoNa[i, ]$interval  
@@ -187,59 +237,99 @@ for (i in 1:nrow(activityNoNa)) {
 
 First we need to verify if all NA values disappeared.
 
-```{r calcs4}
+
+```r
 numOfNaNoNa <- sum(is.na(activityNoNa$steps))
 ```
 
-After imputating missing data, there are `r numOfNaNoNa` NA values, as expected.
+After imputating missing data, there are 0 NA values, as expected.
 
 We can now aggregate the data as previously:
 
-```{r aggregate3}
+
+```r
 stepsDayNoNa <- aggregate(steps ~ date, data = activityNoNa, sum)
 ```
 
 Its new histogram will be as follows:
 
-```{r plot3}
+
+```r
 ggplot(stepsDayNoNa, aes(x = date, y = steps)) + geom_bar(stat = "identity") + 
     ylab("Steps") + xlab("Date") + ggtitle("Steps per Day - Imputated")
 ```
+
+![plot of chunk plot3](figure/plot3.png) 
 
 
 We can surely see some gaps (altough less than before). These gaps are composed by
 extremely low values or Zero, as we can see as follows:
 
-```{r head1}
+
+```r
 head(stepsDayNoNa)
+```
+
+```
+##         date steps
+## 1 2012-10-01 10766
+## 2 2012-10-02   126
+## 3 2012-10-03 11352
+## 4 2012-10-04 12116
+## 5 2012-10-05 13294
+## 6 2012-10-06 15420
 ```
 
 This is mosly likely due to a malfunction of the device.
 
 Finally calculate the new mean and median of the last histogram:
 
-```{r calcs5}
+
+```r
 meanStepsNoNa <- mean(stepsDayNoNa$steps)
 medianStepsNoNa <- median(stepsDayNoNa$steps)
 ```
 
 We can create a table to show old and new values of mean and median:
 
-```{r compare}
+
+```r
 meanCompare <- matrix(c(meanSteps,medianSteps,meanStepsNoNa,medianStepsNoNa),ncol=2,byrow=TRUE)
 colnames(meanCompare) <- c("Mean","Median")
 rownames(meanCompare) <- c("With NA Values","Without NA Values")
 ```
 
-```{r plot5, comment=NA, results="asis", tidy_source=FALSE, echo=TRUE, message=FALSE, warning=FALSE}
-kable(meanCompare, format="html")
 
+```r
+kable(meanCompare, format="html")
 ```
+
+<table>
+ <thead>
+  <tr>
+   <th align="left">   </th>
+   <th align="right"> Mean </th>
+   <th align="right"> Median </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td align="left"> With NA Values </td>
+   <td align="right"> 10766 </td>
+   <td align="right"> 10765 </td>
+  </tr>
+  <tr>
+   <td align="left"> Without NA Values </td>
+   <td align="right"> 10766 </td>
+   <td align="right"> 10766 </td>
+  </tr>
+</tbody>
+</table>
   
   
   
 The distribution changed a bit when imputating NA Values, i.e., whereas their 
-mean remained the same (`r meanSteps`), its median increased to the same value
+mean remained the same (1.0766 &times; 10<sup>4</sup>), its median increased to the same value
 as mean.  
 
 
@@ -261,7 +351,8 @@ is a weekday or weekend day.
 Since my RStudio/SO is Portuguese, I had to write the names of the weekends in
 portuguese hence the "sábado" and "domingo" words.
 
-```{r weekdays}
+
+```r
 day <- weekdays(activityNoNa$date) == "sábado" | weekdays(activityNoNa$date) == "domingo"
 activityNoNa$day[day] <- "weekend"
 activityNoNa$day[!day] <- "weekday"
@@ -270,11 +361,20 @@ activityNoNa$day <- factor(activityNoNa$day)
 str(activityNoNa)
 ```
 
+```
+## 'data.frame':	17568 obs. of  4 variables:
+##  $ steps   : num  1.717 0.3396 0.1321 0.1509 0.0755 ...
+##  $ date    : Date, format: "2012-10-01" "2012-10-01" ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+##  $ day     : Factor w/ 2 levels "weekday","weekend": 1 1 1 1 1 1 1 1 1 1 ...
+```
+
 Now we need to separate both days - weekend days and weekdays. For that purpose
 we will be using aggregate as before, and obtain the average steps in function
 of the weekday day.
 
-```{r weekdays2}
+
+```r
 # separate and calculate mean
 weekend <- aggregate(steps ~ interval, data = activityNoNa[activityNoNa$day == "weekend", ], mean)
 weekend$day <- "weekend"
@@ -289,10 +389,13 @@ stepsTotal$day <- factor(stepsTotal$day)
 Now we can plot the data in function of the weekday day. For this purpose, we
 will be using the *lattice* system. 
 
-```{r weekdays 3}
+
+```r
 xyplot(stepsTotal$steps ~ stepsTotal$interval | stepsTotal$day, type = "l", xlab = "Interval", ylab = "Steps mean", 
     layout = c(1, 2))
 ```
+
+![plot of chunk weekdays 3](figure/weekdays 3.png) 
 
 
 Now we can answer the question:  
